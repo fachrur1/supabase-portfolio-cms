@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin form harness (dev only)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/src/styles.css" />
+  <style>
+    body { padding: 24px; background: var(--bg); }
+    #out { font-family: var(--mono); font-size: 12px; color: var(--accent); white-space: pre-wrap; margin-top: 24px; }
+    .harness-form { max-width: 640px; margin-bottom: 32px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <pre id="out"></pre>
+  <script type="module">
+    // Dev-only harness: exercises the REAL admin form builder (crud.js →
+    // components.js → fields.js / icon-library.js) with stubbed data, so
+    // category selects and the icon picker can be verified without a session.
+    import { buildForm } from '/admin/src/crud.js';
+    import { modules, schemas } from '/admin/src/schemas.js';
+    import { ICON_NAMES, ICON_GROUPS } from '/admin/src/icon-library.js';
+
+    const CATEGORIES = {
+      skill_group: [
+        { id: 'sg-1', name: 'Renewable Energy', slug: 'renewable-energy' },
+        { id: 'sg-2', name: 'Graphic Design', slug: 'graphic-design' },
+        { id: 'sg-3', name: 'CAD Design', slug: 'cad-design' },
+        { id: 'sg-4', name: 'Instrumentation & Control', slug: 'instrumentation-control' },
+        { id: 'sg-5', name: 'GIS Analysis', slug: 'gis-analysis' },
+      ],
+      project: [{ id: 'p-1', name: 'Research', slug: 'research' }],
+    };
+
+    const results = { iconLibrary: { names: ICON_NAMES.length, groups: ICON_GROUPS.length } };
+
+    const render = (id, config, row, categories) => {
+      const form = buildForm(config, row, categories || []);
+      const holder = document.createElement('div');
+      holder.className = 'harness-form';
+      holder.id = id;
+      holder.appendChild(form.root);
+      document.getElementById('app').appendChild(holder);
+      return holder;
+    };
+
+    // 1-2. Skills form (new + edit) - category select hydration.
+    for (const [key, row] of [['skills', {}], ['skills-edit', { category_id: 'sg-5', status: 'published', name: 'HTML5 & CSS3' }]]) {
+      const holder = render(`form-${key}`, modules.skills, row, CATEGORIES.skill_group);
+      const select = holder.querySelector('select[name="category_id"]');
+      results[key] = {
+        options: select ? Array.from(select.options).map(o => o.textContent.trim()) : [],
+        value: select ? select.value : null,
+      };
+    }
+
+    // 3. Projects form - same category mechanism, different kind.
+    const projectHolder = render('form-projects', modules.projects, {}, CATEGORIES.project);
+    const projectSelect = projectHolder.querySelector('select[name="category_id"]');
+    results.projects = {
+      options: projectSelect ? Array.from(projectSelect.options).map(o => o.textContent.trim()) : [],
+    };
+
+    // 4. Social link form - Material Symbols icon field.
+    const socialHolder = render('form-social', schemas.social_links, { platform: 'instagram', url: 'https://instagram.com/x', icon: 'photo_camera' }, []);
+    const iconWrap = socialHolder.querySelector('.icon-field');
+    results.iconField = {
+      found: Boolean(iconWrap),
+      hasPreviewButton: Boolean(iconWrap && iconWrap.querySelector('[data-act="pick"]')),
+      hasBrowseButton: Boolean(iconWrap && iconWrap.querySelector('[data-act="browse"]')),
+      value: iconWrap ? iconWrap.querySelector('.icon-name').value : null,
+      glyph: iconWrap ? iconWrap.querySelector('.icon-preview').textContent.trim() : null,
+    };
+
+    // 5. Project edit form - project_media rows must hydrate into the gallery.
+    const MEDIA_ROWS = [
+      { id: 'm-1', url: '/assets/images/a.png', caption: 'A', alt: 'a', sort_order: 0 },
+      { id: 'm-2', url: '/assets/images/b.png', caption: 'B', alt: 'b', sort_order: 1 },
+      { id: 'm-3', url: '/assets/images/c.png', caption: 'C', alt: 'c', sort_order: 2 },
+    ];
+    const projectForm = buildForm(
+      modules.projects,
+      { id: 'p-1', title: 'Doc test', status: 'published', __project_media: MEDIA_ROWS },
+      CATEGORIES.project
+    );
+    const mediaHolder = document.createElement('div');
+    mediaHolder.className = 'harness-form';
+    mediaHolder.id = 'form-project-media';
+    mediaHolder.appendChild(projectForm.root);
+    document.getElementById('app').appendChild(mediaHolder);
+
+    const collected = projectForm.collect();
+    results.projectGallery = {
+      rendered: mediaHolder.querySelectorAll('.gallery-item').length,
+      urls: Array.from(mediaHolder.querySelectorAll('.gi-url')).map((i) => i.value),
+      mediaFromCollect: collected.media,
+    };
+
+    // 6. Experience edit form - jsonb `media` column hydrates the same editor.
+    const expForm = buildForm(
+      modules.experiences,
+      {
+        id: 'e-1', organization_name: 'Org', position: 'Role', status: 'published',
+        media: [{ url: '/assets/images/e1.png', caption: 'E1', alt: '' }, { url: '/assets/images/e2.png', caption: 'E2', alt: '' }],
+      },
+      []
+    );
+    const expHolder = document.createElement('div');
+    expHolder.className = 'harness-form';
+    expHolder.id = 'form-exp-media';
+    expHolder.appendChild(expForm.root);
+    document.getElementById('app').appendChild(expHolder);
+    results.experienceGallery = {
+      rendered: expHolder.querySelectorAll('.gallery-item').length,
+      mediaFromCollect: expForm.collect().values.media,
+    };
+
+    window.__RESULT = results;
+    window.__FORMS = { project: projectForm, experience: expForm };
+    document.getElementById('out').textContent = JSON.stringify(results, null, 2);
+  </script>
+</body>
+</html>

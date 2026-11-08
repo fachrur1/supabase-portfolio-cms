@@ -1,0 +1,29 @@
+{
+  "name": "supabase-portfolio-cms",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Supabase CMS for a static site: schema, RLS, admin dashboard, migration tooling and a local demo harness.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "demo": "node demo/serve.mjs --site dist",
+    "demo:fallback": "node demo/export-fallback.mjs --site dist",
+    "cms:migrate": "node scripts/migrate-to-supabase.mjs",
+    "cms:admin": "node scripts/bootstrap-admin.mjs",
+    "cms:verify": "node scripts/verify-cms.mjs",
+    "icons": "node scripts/build-icon-library.mjs",
+    "clean:descriptions": "node scripts/clean-cms-descriptions.mjs",
+    "repair:tags": "node scripts/repair-tag-fields.mjs",
+    "repair:media": "node scripts/recover-orphan-media.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.1.0"
+  }
+}

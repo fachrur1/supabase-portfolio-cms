@@ -1,65 +1,153 @@
-# Supabase CMS Build & Deploy Playbook
+# Supabase CMS for a static site
 
-Turn a **static or Vite website** into a fully database-driven CMS — without
-redesigning it. This repository is a complete, battle-tested playbook:
-Supabase (Auth + PostgreSQL + Storage) behind a private admin dashboard,
-fidelity-safe migration of your existing content, and Cloudflare Pages
-deployment.
+A working, production-tested CMS bolted onto a plain HTML/Vite site: Supabase
+(Auth + PostgreSQL + Storage) for the data, a private admin dashboard for editing,
+and Cloudflare Pages for delivery. The public page keeps its original design. It
+just stops being hardcoded.
 
-It was built and verified end-to-end for a real production portfolio site
-(12 projects, media gallery, CV management) — every step below was executed
-and tested live, including automated byte-for-byte content-fidelity checks.
+This repository is the backend half of a real portfolio site, extracted and cleaned:
+the schema, the RLS policies, the admin SPA, the migration and verification scripts,
+the demo harness, and the documentation that explains why each decision was made.
 
-## What you get
+![Works carousel rendered from CMS rows](docs/images/04-works-carousel.png)
 
-| Piece | What it does |
+---
+
+## What is in here
+
+| Path | What it is |
 |---|---|
-| **Database schema + RLS** | Content tables (projects, experiences, education, skills, organizations, gallery, documents, settings) with draft/publish states, custom ordering, and Row Level Security so drafts never leak and anonymous visitors can never write |
-| **Admin dashboard** | Private `/admin` area with 11 modules: schema-driven CRUD, markdown editor with preview, image/PDF uploads, drag-and-drop ordering, search/filter/sort, publish workflow |
-| **Public-site integration** | Your existing site renders CMS content through a shared shape-mapper — visually identical to before, with a static fallback if the database is unreachable |
-| **Migration tooling** | Imports your existing hardcoded content *verbatim* (refuses to run unless output is byte-identical), conflict-safe and re-runnable |
-| **Verification suite** | One command checks auth, draft invisibility, CRUD round-trips, uploads and the public CV link against the live database |
-| **Hardening notes** | XSS escaping at render sinks, TRUNCATE-vs-RLS, storage policy quirks, and other pitfalls found by independent security review |
+| `supabase/migrations/` | 9 idempotent migrations: schema, RLS, hardening, upload fix, section settings, two media galleries, media rotation |
+| `supabase/setup-all.sql` | The same migrations concatenated, ready to paste into the Supabase SQL editor |
+| `admin/` | The admin SPA: plain ES modules, no framework, schema-driven CRUD |
+| `src/cms/shape.js` | One pure mapper that turns database rows into the legacy content shape the page already understood |
+| `src/cms/public-content.ts` | The public loader: PostgREST over plain `fetch`, no supabase-js in the page bundle |
+| `scripts/` | Migration with a byte-for-byte fidelity gate, admin bootstrap, live verification, icon library build, repair tools |
+| `tests/shape.test.mjs`, `demo/shape.test.mjs` | Mapper tests that run with `node --test` and need no database |
+| `demo/` | A dependency-free Supabase mock plus a fictional dataset, so screenshots and demos run with zero credentials |
+| `docs/` | Architecture, schema reference, security model, admin guide, migration, deploy, verification, troubleshooting |
+
+## Screenshots
+
+Every screenshot in `docs/images/` was captured from the demo dataset in `demo/`.
+The content is fictional: invented projects, a placeholder portrait, `example.com`
+addresses. No personal data from the production site appears anywhere in this
+repository.
+
+| Public site | Admin dashboard |
+|---|---|
+| ![Hero](docs/images/01-hero.png) | ![Dashboard](docs/images/13-admin-dashboard.png) |
+| ![Works carousel](docs/images/04-works-carousel.png) | ![Project editor](docs/images/19-admin-project-form.png) |
+| ![Work modal](docs/images/05b-work-modal-body.png) | ![Icon picker](docs/images/22-admin-icon-picker.png) |
+
+Full tour with captions: [docs/09-screenshots.md](docs/09-screenshots.md).
+
+## How it works in one screen
+
+```mermaid
+flowchart LR
+  subgraph Editor
+    A[Admin SPA] -- supabase-js, JWT --> B[(PostgreSQL + RLS)]
+    A -- upload --> S[(Storage)]
+  end
+  subgraph Visitor
+    P[index.html] -- PostgREST fetch, anon key --> B
+    P -- fallback --> F[api/*.json]
+  end
+  B -- published rows only --> P
+```
+
+1. Content lives in 16 tables. Drafts are invisible to anonymous visitors because a
+   row level security policy says so, not because the front-end filters them.
+2. The public page fetches published rows, maps them into the shape the renderer
+   already used, and paints the same DOM as before.
+3. If the database is unreachable, the page falls back to `api/*.json` and still
+   renders.
+4. Writers sign in at `/admin/`, edit through generated forms, upload media, and
+   publish. There is one role and it is allow-listed, so no second account exists
+   unless an admin creates one with the service role.
+
+Deep dive: [docs/01-architecture.md](docs/01-architecture.md).
 
 ## Quick start
 
-1. Create a Supabase project → run the SQL migrations in its SQL editor.
-2. Copy `.env.example` → `.env`, fill in your project URL + keys.
-3. `node scripts/migrate-to-supabase.mjs` (dry-run + fidelity check), then
-   `--confirm` to import your content.
-4. `ADMIN_PASSWORD=... node scripts/bootstrap-admin.mjs <email>` — first admin.
-5. `node scripts/verify-cms.mjs` — require all green.
-6. `npm run build` and deploy `dist/` to Cloudflare Pages
-   (`npx wrangler pages deploy dist --project-name <proj> --branch=<prod-branch>`).
+```bash
+# 1. Database
+#    Create a Supabase project, open the SQL editor, paste supabase/setup-all.sql, run it.
 
-Full instructions (architecture, environment variables, security model,
-content-management guide): see [`SKILL.md`](./SKILL.md) — the complete
-step-by-step playbook — and the reference implementation links below.
+# 2. Environment
+cp .env.example .env          # fill in project URL, anon key, service role key
 
-## Use it with any AI coding assistant
+# 3. First admin (creates the auth user and the allow-list row)
+ADMIN_PASSWORD='a-strong-password' node scripts/bootstrap-admin.mjs you@example.com
 
-`SKILL.md` is written to be loaded directly as project instructions for an
-AI coding agent (Claude Code, Cursor, Codex, Copilot, or any assistant that
-accepts markdown context):
+# 4. Verify the whole chain against the live project
+node scripts/verify-cms.mjs
 
-> "Read SKILL.md and follow it to add this CMS to my site."
+# 5. Build and deploy
+npm run build
+npx wrangler pages deploy dist --project-name <project> --branch=main
+```
 
-The playbook is tool-agnostic: all steps are plain SQL, Node scripts, and CLI
-commands a human can run too.
+The order matters. Step 3 needs the service role key, which is why it is a local
+script and never a browser feature.
 
-## Reference implementation
+## Try it without a Supabase account
 
-The complete working code (schema, admin dashboard, migration scripts, tests)
-lives in the portfolio project that this playbook was extracted from:
+`demo/serve.mjs` implements enough of the PostgREST, GoTrue and Storage HTTP surface
+for the public page and the admin dashboard to run against fictional data. No keys,
+no network, no account.
 
-- `github.com/fachrur1/aru-labs` — branch **`oji-redesign`**:
-  `CMS_SETUP.md`, `supabase/migrations/`, `scripts/`, `src/cms/`, `admin/`, `tests/`
+```bash
+npm run build                                     # a normal build of the site
+node demo/serve.mjs --site dist                   # mock API on http://localhost:8787
+# admin: http://localhost:8787/admin/  (admin@example.com / demo-password)
+```
 
-## Author
+This is the harness that produced every screenshot here, and the reason the docs can
+show a fully populated dashboard without exposing a real person's data. Details:
+[docs/10-demo-harness.md](docs/10-demo-harness.md).
 
-**Muhammad Fachrurrozy** — Engineering Physics student, Universitas Gadjah Mada.
-Portfolio: [fachrur.is-a.dev](https://fachrur.is-a.dev)
+## Use it with an AI coding agent
+
+`SKILL.md` is written to be loaded directly as project instructions for an agent
+(Claude Code, Cursor, Codex, Copilot, or anything that accepts markdown context):
+
+> Read SKILL.md and follow it to add this CMS to my site.
+
+The playbook is tool-agnostic. Every step is plain SQL, Node or a CLI command that a
+human can run too.
+
+## Design decisions worth knowing
+
+- **The renderer was not rewritten.** A pure mapper (`src/cms/shape.js`) produces the
+  exact legacy shape, so the public page stayed visually identical while the data
+  source changed underneath it.
+- **RLS is the security boundary.** Anonymous visitors get `select` on published rows
+  only, and `admin_users` has no insert policy at all. Application code is a
+  convenience, not the enforcement.
+- **Migration is guarded by a fidelity check.** The importer refuses to write unless
+  the mapped output is byte-identical to the source content for every section.
+- **Writes degrade instead of blocking.** If a column is missing because a migration
+  has not run yet, the admin drops that one column, saves the rest, and logs a
+  warning rather than throwing the edit away.
+- **Child rows are diffed, never wiped.** Gallery media is synced with an explicit
+  insert, update and delete plan, because a delete-then-insert once erased a gallery.
+
+## Repository scope
+
+This repo is the backend of a live portfolio CMS. The front-end half (rendering,
+galleries, animation, theming) is a separate repository. Site-specific strings
+(domain, CV filename, seeded email, account names) have been replaced with
+placeholders so the code runs as a reference rather than a copy of someone's
+identity.
+
+## Requirements
+
+Node 20 or newer, a Supabase project (the free tier is enough), and a Cloudflare
+Pages project if you want the same hosting setup. The admin app needs no build step:
+it is plain ES modules served as static files.
 
 ## License
 
-MIT — use it for your own site, no attribution required (appreciated though!).
+MIT.
