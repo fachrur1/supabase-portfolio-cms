@@ -9,7 +9,7 @@ because the same symptom has more than one cause and guessing wastes an afternoo
 |---|---|---|
 | A section renders nothing, no console error | RLS hides the rows: still `draft` | Publish the row, or check `status` |
 | Everything is empty after a fresh setup | `VITE_SUPABASE_*` were not set at build time | Set them in `.env`, rebuild. Vite inlines them, so editing `.env` alone changes nothing |
-| The page shows old content after an edit | You are looking at a cached deploy, or the build was never deployed | Cache-bust the domain and check the deployment list |
+| The page shows old content after an edit | The browser is showing a cached deploy, or the build was never deployed | Cache-bust the domain and check the deployment list |
 | A section is empty but the table has rows | A new `site_settings` key is missing from the public read policy | Recreate `site_settings_public_read` with the key in its allowlist. `alter policy` is not enough |
 | Images 404 right after a deploy | Legacy `public/assets/images/*` URLs collide with the hashed bundle directory for a short window | Re-check after propagation |
 | The page works locally, not on the domain | Deployed to a branch that is not the production branch | Redeploy with `--branch=<the production branch>` |

@@ -51,7 +51,7 @@ A module declaration covers:
 - **Behaviour flags**: which field holds the ordering value, which fields the search
   box should use, which category kind feeds a select.
 
-The list screen gives you, for free: debounced search over the declared fields,
+The list screen provides, without extra code: debounced search over the declared fields,
 status and category filters, sortable headers, ten rows per page, drag-to-reorder
 inside the current ordering, per-row edit, duplicate-safe delete with confirmation,
 and a preview modal that renders the row the way the public page would.

@@ -12,7 +12,7 @@ it: Supabase (Auth + PostgreSQL + Storage) behind a private admin dashboard, a
 fidelity-safe migration of the current content, and a Cloudflare Pages deploy.
 
 Load this file as project instructions and follow it in order. Each step has a
-done-when line, so you always know whether you can move on.
+done-when line, so progress is measurable.
 
 The full working code sits next to this file: `supabase/migrations/`, `admin/`,
 `scripts/`, `src/cms/`, `demo/`. Read it when the prose is not enough.
@@ -61,7 +61,7 @@ Rules that keep the SQL editor usable:
 - Wrap multi-statement files in `begin; ... commit;`.
 - Create tables **before** SQL functions that query them. A SQL-language function
   validates its relations at create time.
-- Comment the why, not the what. The next reader is you in six months.
+- Comment the why, not the what. The next reader arrives in six months with no context.
 
 Done when: the SQL editor reports success and re-running the same file also
 succeeds.

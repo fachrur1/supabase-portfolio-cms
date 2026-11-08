@@ -5,7 +5,7 @@ A working, production-tested CMS bolted onto a plain HTML/Vite site: Supabase
 and Cloudflare Pages for delivery. The public page keeps its original design. It
 just stops being hardcoded.
 
-This repository is the backend half of a real portfolio site, extracted and cleaned:
+This repository is the backend half of a production single-page site, extracted and cleaned:
 the schema, the RLS policies, the admin SPA, the migration and verification scripts,
 the demo harness, and the documentation that explains why each decision was made.
 
@@ -136,7 +136,7 @@ human can run too.
 
 ## Repository scope
 
-This repo is the backend of a live portfolio CMS. The front-end half (rendering,
+This repo is the backend of a CMS for a single-page site. The front-end half (rendering,
 galleries, animation, theming) lives in
 [portfolio-frontend-skill](https://github.com/fachrur1/portfolio-frontend-skill). Site-specific strings
 (domain, CV filename, seeded email, account names) have been replaced with
@@ -146,7 +146,7 @@ identity.
 ## Requirements
 
 Node 20 or newer, a Supabase project (the free tier is enough), and a Cloudflare
-Pages project if you want the same hosting setup. The admin app needs no build step:
+Pages project for the same hosting setup. The admin app needs no build step:
 it is plain ES modules served as static files.
 
 ## License

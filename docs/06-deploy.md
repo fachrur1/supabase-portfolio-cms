@@ -34,9 +34,9 @@ npx wrangler pages deploy dist --project-name <project> --branch=main
 production branch `main`, deploying with `--branch=production` creates a separate
 deployment environment. The result looks successful and is misleading: the
 `<project>.pages.dev` alias shows the new build while the custom domain keeps serving
-the previous one, sometimes for hours, depending on how you check.
+the previous one, sometimes for hours, depending on how the check is made.
 
-If you are unsure which branch is production, look at the Cloudflare dashboard or at
+When the production branch is unclear, check the Cloudflare dashboard or
 `deployment list`: the production deployment is labelled as such.
 
 ## Verify the real domain
@@ -44,7 +44,7 @@ If you are unsure which branch is production, look at the Cloudflare dashboard o
 The deployment alias is not what visitors see. Verify the custom domain:
 
 ```bash
-curl -s "https://<your-domain>/?v=$(date +%s)" | grep -c "<marker you just shipped>"
+curl -s "https://<domain>/?v=$(date +%s)" | grep -c "<marker from the new build>"
 ```
 
 Then open it in a browser and check the sections that changed. A cache-busting query
@@ -54,7 +54,7 @@ domain is the one that matters.
 Also confirm the admin app answers:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://<your-domain>/admin/
+curl -s -o /dev/null -w "%{http_code}\n" https://<domain>/admin/
 ```
 
 A 200 on `/admin/` only proves the HTML is served. The login form proves the bundle

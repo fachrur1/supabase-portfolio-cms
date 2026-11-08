@@ -19,7 +19,7 @@ Two groups run here:
   serialisation, media diff plans, nullable category resolution, icon library
   sanity.
 
-None of these need credentials. They are the part of the suite you can run on a plane.
+None of these need credentials. They run without a network.
 
 ## 2. Migration fidelity gate
 
@@ -66,8 +66,8 @@ This one talks to the real project. What it proves, in order:
 | delete removes publicly | cleanup works end to end |
 
 Two of these are security assertions, and they fail loudly on purpose. "anon INSERT
-blocked" printing `INSERT SUCCEEDED - RLS IS BROKEN` means you should close the laptop
-and fix the policy before doing anything else.
+blocked" printing `INSERT SUCCEEDED - RLS IS BROKEN` means the policy needs fixing
+before anything else.
 
 ## 4. Build and typecheck
 

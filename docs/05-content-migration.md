@@ -11,8 +11,8 @@ metadata field the author never wrote, the page changes subtly and nobody notice
 a month. The guard is an offline fidelity check that runs before any write.
 
 **Partial imports.** A failure halfway through leaves half the tables populated. Re-
-running then skips everything that already has rows, which sounds safe until you
-realise the table that failed is skipped too, because it is not empty either. The gate
+running then skips every table that already has rows, which sounds safe until the
+failed table is skipped as well, because it is not empty either. The gate
 is per table, on that table's own emptiness.
 
 ## Usage
@@ -90,7 +90,7 @@ monolithic `data.json` or modular markdown with frontmatter. For another site, t
 parts to keep are the shape of the process, not the parsing:
 
 1. Build the legacy shape from the source of truth.
-2. Build the rows you would insert.
+2. Build the rows that would be inserted.
 3. Map the rows back with the real mapper.
 4. Compare. Refuse to write on any difference.
 5. Gate each table on its own emptiness.
