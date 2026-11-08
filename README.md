@@ -137,7 +137,8 @@ human can run too.
 ## Repository scope
 
 This repo is the backend of a live portfolio CMS. The front-end half (rendering,
-galleries, animation, theming) is a separate repository. Site-specific strings
+galleries, animation, theming) lives in
+[portfolio-frontend-skill](https://github.com/fachrur1/portfolio-frontend-skill). Site-specific strings
 (domain, CV filename, seeded email, account names) have been replaced with
 placeholders so the code runs as a reference rather than a copy of someone's
 identity.
